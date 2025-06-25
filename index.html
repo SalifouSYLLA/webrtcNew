@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -12,6 +13,11 @@
     #buttons {
       margin: 20px;
     }
+    textarea {
+      width: 90%;
+      height: 120px;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -25,6 +31,9 @@
     <button onclick="answerCall()">Répondre</button>
   </div>
 
+  <h3>Offre / Réponse à copier :</h3>
+  <textarea id="offerDisplay" readonly></textarea>
+
   <script>
     let localStream;
     let peerConnection;
@@ -34,6 +43,7 @@
 
     const localVideo = document.getElementById('localVideo');
     const remoteVideo = document.getElementById('remoteVideo');
+    const offerDisplay = document.getElementById('offerDisplay');
 
     // 1. Accès à la webcam
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
@@ -57,13 +67,12 @@
         offer = o;
         peerConnection.setLocalDescription(offer);
         console.log('Offre créée :', offer);
-        // Ici tu dois transférer manuellement l'offre à l'autre utilisateur
-        alert("Copie cette offre dans la console et colle-la sur l''autre appareil dans answerCall()");
+        offerDisplay.value = JSON.stringify(offer);
       });
     }
 
     function answerCall() {
-      const remoteOffer = prompt("Colle ici l'offre de l'appelant (copiée depuis la console)");
+      const remoteOffer = prompt("Colle ici l'offre de l'appelant (copiée depuis la console ou le champ)");
       const parsedOffer = JSON.parse(remoteOffer);
 
       peerConnection = new RTCPeerConnection(config);
@@ -77,7 +86,7 @@
         peerConnection.createAnswer().then(answer => {
           peerConnection.setLocalDescription(answer);
           console.log('Réponse à envoyer :', answer);
-          alert("Copie cette réponse et colle-la dans la console du premier appareil (appelant)");
+          offerDisplay.value = JSON.stringify(answer);
         });
       });
     }

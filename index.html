@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>WebRTC Appel Vidéo 1-to-1</title>
+  <style>
+    video {
+      width: 45%;
+      border: 2px solid black;
+      margin: 10px;
+    }
+    #buttons {
+      margin: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Appel vidéo WebRTC simple (1-to-1)</h2>
+  <div id="videos">
+    <video id="localVideo" autoplay muted></video>
+    <video id="remoteVideo" autoplay></video>
+  </div>
+  <div id="buttons">
+    <button onclick="startCall()">Démarrer l'appel</button>
+    <button onclick="answerCall()">Répondre</button>
+  </div>
+
+  <script>
+    let localStream;
+    let peerConnection;
+    const config = {
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    };
+
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+
+    // 1. Accès à la webcam
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        localVideo.srcObject = stream;
+        localStream = stream;
+      });
+
+    // 2. Simuler un serveur de signalisation avec WebSocket manuellement (ici on fait local)
+    let offer;
+
+    function startCall() {
+      peerConnection = new RTCPeerConnection(config);
+      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+      peerConnection.ontrack = event => {
+        remoteVideo.srcObject = event.streams[0];
+      };
+
+      peerConnection.createOffer().then(o => {
+        offer = o;
+        peerConnection.setLocalDescription(offer);
+        console.log('Offre créée :', offer);
+        // Ici tu dois transférer manuellement l'offre à l'autre utilisateur
+        alert("Copie cette offre dans la console et colle-la sur l''autre appareil dans answerCall()");
+      });
+    }
+
+    function answerCall() {
+      const remoteOffer = prompt("Colle ici l'offre de l'appelant (copiée depuis la console)");
+      const parsedOffer = JSON.parse(remoteOffer);
+
+      peerConnection = new RTCPeerConnection(config);
+      localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+      peerConnection.ontrack = event => {
+        remoteVideo.srcObject = event.streams[0];
+      };
+
+      peerConnection.setRemoteDescription(new RTCSessionDescription(parsedOffer)).then(() => {
+        peerConnection.createAnswer().then(answer => {
+          peerConnection.setLocalDescription(answer);
+          console.log('Réponse à envoyer :', answer);
+          alert("Copie cette réponse et colle-la dans la console du premier appareil (appelant)");
+        });
+      });
+    }
+  </script>
+</body>
+</html>

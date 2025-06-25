@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -29,10 +28,14 @@
   <div id="buttons">
     <button onclick="startCall()">Démarrer l'appel</button>
     <button onclick="answerCall()">Répondre</button>
+    <button onclick="applyAnswer()">Appliquer la réponse</button>
   </div>
 
-  <h3>Offre / Réponse à copier :</h3>
+  <h3>Offre / Réponse :</h3>
   <textarea id="offerDisplay" readonly></textarea>
+
+  <h3>Coller ici la réponse :</h3>
+  <textarea id="answerInput"></textarea>
 
   <script>
     let localStream;
@@ -44,16 +47,13 @@
     const localVideo = document.getElementById('localVideo');
     const remoteVideo = document.getElementById('remoteVideo');
     const offerDisplay = document.getElementById('offerDisplay');
+    const answerInput = document.getElementById('answerInput');
 
-    // 1. Accès à la webcam
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then(stream => {
         localVideo.srcObject = stream;
         localStream = stream;
       });
-
-    // 2. Simuler un serveur de signalisation avec WebSocket manuellement (ici on fait local)
-    let offer;
 
     function startCall() {
       peerConnection = new RTCPeerConnection(config);
@@ -64,15 +64,13 @@
       };
 
       peerConnection.createOffer().then(o => {
-        offer = o;
-        peerConnection.setLocalDescription(offer);
-        console.log('Offre créée :', offer);
-        offerDisplay.value = JSON.stringify(offer);
+        peerConnection.setLocalDescription(o);
+        offerDisplay.value = JSON.stringify(o);
       });
     }
 
     function answerCall() {
-      const remoteOffer = prompt("Colle ici l'offre de l'appelant (copiée depuis la console ou le champ)");
+      const remoteOffer = prompt("Colle ici l'offre de l'appelant (copiée depuis le champ)");
       const parsedOffer = JSON.parse(remoteOffer);
 
       peerConnection = new RTCPeerConnection(config);
@@ -85,10 +83,19 @@
       peerConnection.setRemoteDescription(new RTCSessionDescription(parsedOffer)).then(() => {
         peerConnection.createAnswer().then(answer => {
           peerConnection.setLocalDescription(answer);
-          console.log('Réponse à envoyer :', answer);
           offerDisplay.value = JSON.stringify(answer);
         });
       });
+    }
+
+    function applyAnswer() {
+      const answer = answerInput.value;
+      if (!answer) {
+        alert("Veuillez coller une réponse valide dans le champ ci-dessus.");
+        return;
+      }
+      const parsedAnswer = JSON.parse(answer);
+      peerConnection.setRemoteDescription(new RTCSessionDescription(parsedAnswer));
     }
   </script>
 </body>
